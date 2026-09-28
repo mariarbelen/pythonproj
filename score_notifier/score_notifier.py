@@ -40,7 +40,7 @@ def feedback_for(score):
         return "To do better next time, why not visit the tutoring center?", "tutoring.jpg"
     if score >= GOLD_STAR_THRESHOLD:
         return "Fantastic job! Keep it up.", "goldstar.jpg"
-    return "Good work. Keep studying!", None
+    return "Keep up the studying, and reach out during office hours if you have questions.", None
 
 
 def build_message(sender, recipient, score, image_dir=IMAGE_DIR):

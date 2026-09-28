@@ -2,7 +2,60 @@
 
 [![CI](https://github.com/mariarbelen/pythonproj/actions/workflows/ci.yml/badge.svg)](https://github.com/mariarbelen/pythonproj/actions/workflows/ci.yml)
 
-Python programs from my **CS3C** coursework: an interactive geometry visualizer and an email automation tool. Both are covered by automated tests (pytest) and lint checks (ruff) that run on every push via GitHub Actions.
+Python projects covering data analysis, GUI programming and email automation. All three are covered by automated tests (pytest) and lint checks (ruff) that run on every push via GitHub Actions.
+
+| Project | What it does | Tools |
+|---|---|---|
+| [Grade Analyzer](#-grade-analyzer) | Weighted grades, class statistics and a distribution chart from a gradebook CSV | pandas, matplotlib |
+| [Circle Intersection Visualizer](#-circle-intersection-visualizer) | Click to draw two circles and see how they relate | Tkinter |
+| [Exam Score Notifier](#%EF%B8%8F-exam-score-notifier) | Emails students their scores with personalized feedback | smtplib, email |
+
+## 📊 Grade Analyzer
+
+[`grade_analyzer/grade_analyzer.py`](grade_analyzer/grade_analyzer.py)
+
+Reads a class gradebook and turns it into a report for the instructor:
+
+- Computes each student's **weighted course grade**: homework 30%, midterm 30%, final 40%. An optional `--drop-lowest` drops each student's lowest homework score.
+- Assigns letter grades and **flags students who need help**: a grade under 70 or 2+ missing assignments
+- Reports class statistics (mean, median, standard deviation, range) and the hardest assignment
+- Saves a **grade-distribution chart**, a full `grades.csv`, and a `scores_for_notifier.csv` that the [Exam Score Notifier](#%EF%B8%8F-exam-score-notifier) reads directly, so the two tools form one workflow
+- Validates the file and reports problems by line number (missing columns, non-numeric or out-of-range scores)
+
+```bash
+python grade_analyzer/grade_analyzer.py grade_analyzer/gradebook.csv
+```
+
+```
+Student                HW  Midterm  Final   Grade  Letter
+---------------------------------------------------------
+Sam Okafor           96.0       96     85    91.6  A
+Daniel Patel         92.4       91     91    91.4  A
+Ben Kim              72.8      100     91    88.2  B
+...
+Kevin Tran           51.8       81     87    74.6  C  <- needs help
+...
+Quinn Murphy         62.4       39     52    51.2  F  <- needs help
+
+Class of 20: mean 75.7, median 74.6, std dev 10.4, range 51.2-91.6
+Grade distribution: A: 2, B: 6, C: 6, D: 5, F: 1
+Hardest assignment: hw3 (class average 68.3)
+
+7 student(s) may need help:
+  - Kevin Tran (2 missing assignments)
+  - Ana Lopez (grade 65.5, 2 missing assignments)
+  ...
+```
+
+![Bar chart of letter grades: A 2, B 6, C 6, D 5, F 1](docs/grade_distribution.png)
+
+Then email every student their grade:
+
+```bash
+python score_notifier/score_notifier.py report/scores_for_notifier.csv
+```
+
+The sample gradebook uses made-up students.
 
 ## 🔵 Circle Intersection Visualizer
 
@@ -65,12 +118,13 @@ You'll be prompted for the password, or you can set `SMTP_PASSWORD`. To attach i
 Requires Python 3.10+.
 
 ```bash
-pip install -r requirements-dev.txt
-pytest          # 28 unit tests
+pip install -r requirements.txt       # to run the programs
+pip install -r requirements-dev.txt   # to also run the tests
+pytest          # 49 tests
 ruff check .    # lint
 ```
 
-The tests cover every circle relationship, including tangent and edge cases, as well as score thresholds, input validation, email contents and attachments. They also check that preview mode never connects to a mail server and that sending uses STARTTLS, using a fake SMTP server.
+The tests cover grade math, letter cutoffs, missing work, file validation and the analyzer-to-notifier handoff. They also cover every circle relationship, including tangent and edge cases, as well as score thresholds, input validation, email contents and attachments. They also check that preview mode never connects to a mail server and that sending uses STARTTLS, using a fake SMTP server.
 
 ## Author
 
