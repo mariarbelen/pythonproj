@@ -6,7 +6,14 @@ from score_notifier import build_message, feedback_for, parse_student, read_stud
 
 @pytest.mark.parametrize(
     "score, image",
-    [(0, "tutoring.jpg"), (50, "tutoring.jpg"), (51, None), (89, None), (90, "goldstar.jpg"), (100, "goldstar.jpg")],
+    [
+        (0, "tutoring.jpg"),
+        (50, "tutoring.jpg"),
+        (51, None),
+        (89, None),
+        (90, "goldstar.jpg"),
+        (100, "goldstar.jpg"),
+    ],
 )
 def test_feedback_thresholds(score, image):
     assert feedback_for(score)[1] == image

@@ -199,7 +199,8 @@ def write_outputs(grades, summary, out_dir):
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Analyze a class gradebook.")
     parser.add_argument("gradebook", help="CSV file with name, email, hw*, midterm and final columns")
-    parser.add_argument("--drop-lowest", action="store_true", help="drop each student's lowest homework score")
+    parser.add_argument("--drop-lowest", action="store_true",
+                        help="drop each student's lowest homework score")
     parser.add_argument("--out", default="report", help="folder for output files (default: report)")
     args = parser.parse_args(argv)
 

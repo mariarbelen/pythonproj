@@ -4,3 +4,8 @@ testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 110
+# The project folders hold our own modules, so imports from them sort as first-party.
+src = [".", "circles", "score_notifier", "grade_analyzer"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
