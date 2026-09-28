@@ -1,0 +1,6 @@
+[tool.pytest.ini_options]
+pythonpath = ["circles", "score_notifier"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 110

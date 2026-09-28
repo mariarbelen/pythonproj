@@ -1,71 +1,122 @@
+"""Circle Intersection Visualizer.
 
-##
-#  Draws and determines if two circles intersect using getMouse. The parameters of both
-#  circles are obtained from the user.
-#
+Click to draw two circles, then see how they relate: separate, touching,
+overlapping, one inside the other, or identical.
 
-from ezgraphics import GraphicsWindow
-from math import sqrt
-from sys import exit
+For each circle, click once for its center and once on its edge to set the
+radius. After both circles are drawn, click anywhere to start over.
 
+Author: Maria Rodriguez
+"""
 
-MIN_RADIUS = 5
+import math
+import sys
+
+try:
+    import tkinter as tk
+except ImportError:  # some Linux installs ship Python without Tk
+    tk = None
+
 WIN_WIDTH = 500
 WIN_HEIGHT = 500
+MIN_RADIUS = 5
+COLORS = ("blue", "red")
 
-win = GraphicsWindow(WIN_WIDTH, WIN_HEIGHT)
-canvas = win.canvas()
+SEPARATE = "The circles are completely separate."
+EXTERNALLY_TANGENT = "The circles touch at a single point (outside)."
+INTERSECTING = "The circles intersect at two points."
+INTERNALLY_TANGENT = "The circles touch at a single point (inside)."
+CONTAINED = "One circle is contained within the other."
+COINCIDENT = "The circles are identical."
 
-point1 = win.getMouse()
-x0 = point1[0]
-y0 = point1[1]
 
-r0 = 50
+def classify_circles(x0, y0, r0, x1, y1, r1, tolerance=1e-9):
+    """Return a message describing how two circles relate to each other.
 
-if x0 < 0 or x0 >= WIN_WIDTH or y0 < 0 or y0 >= WIN_HEIGHT :
-   print("Error: the center of the circle must be within the area of the window.") 
+    Compares the distance between the centers with the sum and difference
+    of the radii. Distances within `tolerance` of each other count as equal.
+    """
+    if r0 <= 0 or r1 <= 0:
+        raise ValueError("radii must be positive")
 
-if r0 < MIN_RADIUS :
-   print("Error: the radius must be >", MIN_RADIUS)
+    dist = math.hypot(x1 - x0, y1 - y0)
+    radius_sum = r0 + r1
+    radius_diff = abs(r0 - r1)
 
-# Draw the first circle.
-canvas.setOutline("blue")
-canvas.drawOval(x0 - r0, y0 - r0, 2 * r0, 2 * r0)
+    if dist <= tolerance and radius_diff <= tolerance:
+        return COINCIDENT
+    if dist > radius_sum + tolerance:
+        return SEPARATE
+    if abs(dist - radius_sum) <= tolerance:
+        return EXTERNALLY_TANGENT
+    if abs(dist - radius_diff) <= tolerance:
+        return INTERNALLY_TANGENT
+    if dist < radius_diff:
+        return CONTAINED
+    return INTERSECTING
 
-point2 = win.getMouse()
-x1 = point2[0]
-y1 = point2[1]
 
-r1 = 50 
+class CircleApp:
+    """Collects clicks, draws the circles and shows the result."""
 
-if x1 < 0 or x1 >= WIN_WIDTH or y1 < 0 or y1 >= WIN_HEIGHT :
-   print("Error: the center of the circle must be within the area of the window.") 
+    def __init__(self, root):
+        self.canvas = tk.Canvas(root, width=WIN_WIDTH, height=WIN_HEIGHT, bg="white")
+        self.canvas.pack()
+        self.canvas.bind("<Button-1>", self.on_click)
+        self.reset()
 
-r1 = sqrt((x1 - x0) ** 2 + (y1 - y0) ** 2)
+    def reset(self):
+        self.canvas.delete("all")
+        self.circles = []  # list of (x, y, radius)
+        self.center = None
+        self.show_hint("Click to place the center of the blue circle.")
 
-if r1 < MIN_RADIUS :
-   print("Error: the radius must be >", MIN_RADIUS)
+    def show_hint(self, text):
+        self.canvas.delete("hint")
+        self.canvas.create_text(10, WIN_HEIGHT - 12, text=text, anchor="w", tags="hint")
 
-# Draw the second circle.
-canvas.setOutline("red")
-canvas.drawOval(x1 - r1, y1 - r1, 2 * r1, 2 * r1)
+    def on_click(self, event):
+        if len(self.circles) == 2:
+            self.reset()
+            return
 
-# Determine if the two circles intersect and select appropriate message.
-dist = sqrt((x1 - x0) ** 2 + (y1 - y0) ** 2)
+        color = COLORS[len(self.circles)]
+        if self.center is None:
+            self.center = (event.x, event.y)
+            self.canvas.create_oval(event.x - 2, event.y - 2, event.x + 2, event.y + 2,
+                                    fill=color, outline=color)
+            self.show_hint(f"Click on the edge of the {color} circle to set its radius.")
+            return
 
-if dist > r0 + r1 :
-   message = "The circles are completely separate."
-elif dist < abs(r0 - r1) :
-   message = "One circle is contained within the other."
-elif dist == r0 + r1 :
-   message = "The circles intersect at a single point."
-elif dist == 0 and r0 == r1 :
-   message = "The circles are coincident."
-else :
-   message = "The circles intersect at two points."
+        x, y = self.center
+        radius = math.hypot(event.x - x, event.y - y)
+        if radius < MIN_RADIUS:
+            self.show_hint(f"The radius must be at least {MIN_RADIUS} pixels. Click farther away.")
+            return
 
-canvas.setOutline("black")
-canvas.drawText(15, WIN_HEIGHT - 15, message)
+        self.canvas.create_oval(x - radius, y - radius, x + radius, y + radius,
+                                outline=color, width=2)
+        self.circles.append((x, y, radius))
+        self.center = None
 
-# Show the drawing
-win.wait()
+        if len(self.circles) == 1:
+            self.show_hint("Click to place the center of the red circle.")
+        else:
+            (x0, y0, r0), (x1, y1, r1) = self.circles
+            # Clicks land on whole pixels, so allow one pixel of slack.
+            message = classify_circles(x0, y0, r0, x1, y1, r1, tolerance=1.0)
+            self.show_hint(message + "  Click to start over.")
+
+
+def main():
+    if tk is None:
+        sys.exit("This program needs Tkinter. On Debian/Ubuntu: sudo apt install python3-tk")
+    root = tk.Tk()
+    root.title("Circle Intersection")
+    root.resizable(False, False)
+    CircleApp(root)
+    root.mainloop()
+
+
+if __name__ == "__main__":
+    main()
